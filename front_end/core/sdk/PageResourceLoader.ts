@@ -327,6 +327,13 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
       parentFrameId = parentFrameId ?? frameTarget.targetInfo()?.parentFrameId ?? null;
       frameTarget = frameTarget.parentTarget();
     }
+    if (frameTarget && frameTarget !== initiator.target && !(initiator.frameId ?? parentFrameId)) {
+      // The initiator is a non-frame target (e.g. a service worker or a shared worker) that is not
+      // owned by any single frame. Don't attribute the load to the page's main frame, as the browser
+      // would then issue the request with the main frame's origin and credentials. Load through the
+      // initiator's own target instead, where the browser attributes the request to the worker's origin.
+      return {frameTarget: initiator.target, frameId: null};
+    }
     const frameId = initiator.frameId ?? parentFrameId ?? frameTarget?.model(ResourceTreeModel)?.mainFrame?.id ?? null;
     return {frameTarget, frameId};
   }
